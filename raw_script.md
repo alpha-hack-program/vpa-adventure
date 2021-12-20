@@ -186,22 +186,60 @@ oc get deployment hamster -o yaml | egrep -i 'limits|request' -A2
 kind: LimitRange
 apiVersion: v1
 metadata:
-  name: test-vpa-limit-range
-  namespace: test-vpa
+  name: test-vpa-2-limit-range
+  namespace: test-vpa-2
 spec:
   limits:
     - type: Container
       max:
-        cpu: '1'
+        cpu: '750m'
         memory: 1Gi
       default:
-        cpu: 500m
+        cpu: 250m
         memory: 1024Mi
       defaultRequest:
         cpu: 50m
         memory: 256Mi
     - type: Pod
       max:
-        cpu: '1'
+        cpu: '750m'
         memory: 1Gi
+```
+
+10. The HPA adjust toward the max limit defined in the LimitRange, never will override this value, it's the higher "physical" limit:
+
+```
+oc get vpa hamster-vpa -o jsonpath='{.status}' | jq -r .
+{
+  "conditions": [
+    {
+      "lastTransitionTime": "2021-12-20T10:54:41Z",
+      "status": "True",
+      "type": "RecommendationProvided"
+    }
+  ],
+  "recommendation": {
+    "containerRecommendations": [
+      {
+        "containerName": "hamster",
+        "lowerBound": {
+          "cpu": "312m",
+          "memory": "262144k"
+        },
+        "target": {
+          "cpu": "548m",
+          "memory": "262144k"
+        },
+        "uncappedTarget": {
+          "cpu": "548m",
+          "memory": "262144k"
+        },
+        "upperBound": {
+          "cpu": "2",
+          "memory": "673899999"
+        }
+      }
+    ]
+  }
+}
 ```
