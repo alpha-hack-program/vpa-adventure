@@ -1,22 +1,24 @@
+# Use Case 1 - Autoscaling and Applying requests and limits automatically
+
 0. Create a project without LimitRange
 
-```
+```sh
 PROJECT=test-vpa-$RANDOM
 ```
 
-```
+```sh
 oc new-project $PROJECT
 ```
 
 1. Delete any preexistent LimitRange.
 
-```
+```sh
 oc -n $PROJECT delete limitrange --all
 ```
 
 2. Deploy Hamster application:
 
-```
+```sh
 cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: apps/v1
 kind: Deployment
@@ -49,9 +51,15 @@ spec:
 EOF
 ```
 
+NOTE: [By default](https://docs.openshift.com/container-platform/4.9/nodes/pods/nodes-pods-vertical-autoscaler.html), workload objects must specify a minimum of two replicas in order for the VPA to automatically delete and update their pods.
+
+As a result, workload objects that specify fewer than two replicas are not automatically acted upon by the VPA.
+
+The VPA does update new pods from these workload objects if the pods are restarted by some process external to the VPA.
+
 3. Check that the request and limits generated in Pod
 
-```
+```sh
 oc get pod -l app=hamster -o yaml | grep limit -A2
         limits:
           cpu: 200m
@@ -62,16 +70,16 @@ oc get pod -l app=hamster -o yaml | grep limit -A2
           memory: 75Mi
 ```
 
-```
+```sh
 oc get pod -l app=hamster -o yaml | grep requests -A2
         requests:
           cpu: 100m
           memory: 50Mi
 ```
 
-4. Apply the VPA 
+4. Apply the VPA:
 
-```
+```sh
 cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: "autoscaling.k8s.io/v1"
 kind: VerticalPodAutoscaler
@@ -104,7 +112,7 @@ NOTE: we're setting the maxAllowed higher than the potential LimitRange, to see 
 
 5. Check the VPA resources applied:
 
-```
+```sh
 oc get vpa 
 NAME          MODE   CPU    MEM       PROVIDED   AGE
 hamster-vpa   Auto   247m   262144k   True       3m44s
@@ -146,7 +154,7 @@ oc get vpa hamster-vpa -o jsonpath='{.status}' | jq -r .
 
 6. Check the VPA resources:
 
-```
+```sh
 oc get pod -l app=hamster -o yaml | grep vpa
       vpaObservedContainers: hamster
       vpaUpdates: 'Pod resources updated by hamster-vpa: container 0: cpu request,
@@ -158,7 +166,7 @@ oc get pod -l app=hamster -o yaml | grep vpa
 
 7. Check that the VPA changed automatically the requests and limits in the POD, but NOT in the deployment or replicaset:
 
-```
+```sh
 oc get pod -l app=hamster -o yaml | grep requests -A2
         requests:
           cpu: 143m
@@ -169,7 +177,7 @@ oc get pod -l app=hamster -o yaml | grep requests -A2
           memory: 262144k
 ```
 
-```
+```sh
 oc get pod -l app=hamster -o yaml | grep limit -A2
         memory request, cpu limit, memory limit'
     creationTimestamp: "2021-12-20T10:55:41Z"
@@ -190,7 +198,7 @@ oc get pod -l app=hamster -o yaml | grep limit -A2
 
 8. The deployment of hamster app is not changed at all, the VPA just is changing the Pod spec definition:
 
-```
+```sh
 oc get deployment hamster -o yaml | egrep -i 'limits|request' -A2          
           limits:
             cpu: 200m
@@ -202,7 +210,7 @@ oc get deployment hamster -o yaml | egrep -i 'limits|request' -A2
 
 9. Define a LimitRange for capp / limit the maximum values:
 
-```
+```sh
 kind: LimitRange
 apiVersion: v1
 metadata:
@@ -228,7 +236,7 @@ spec:
 
 10. The HPA adjust toward the max limit defined in the LimitRange, never will override this value, it's the higher "physical" limit:
 
-```
+```sh
 oc get vpa hamster-vpa -o jsonpath='{.status}' | jq -r .
 {
   "conditions": [
