@@ -1,19 +1,23 @@
 0. Create a project without LimitRange
 
 ```
-oc new-project test-vpa
+PROJECT=test-vpa-$RANDOM
+```
+
+```
+oc new-project $PROJECT
 ```
 
 1. Delete any preexistent LimitRange.
 
 ```
-oc -n test-vpa delete limitrange --all
+oc -n $PROJECT delete limitrange --all
 ```
 
 2. Deploy Hamster application:
 
 ```
-cat <<EOF | oc apply -f -
+cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +26,7 @@ spec:
   selector:
     matchLabels:
       app: hamster
-  replicas: 1
+  replicas: 2
   template:
     metadata:
       labels:
@@ -36,7 +40,7 @@ spec:
               cpu: 100m
               memory: 50Mi
             limits:
-              cpu: 200m
+              cpu: 250m
               memory: 75Mi
           command: ["/bin/sh"]
           args:
@@ -68,7 +72,7 @@ oc get pod -l app=hamster -o yaml | grep requests -A2
 4. Apply the VPA 
 
 ```
-cat <<EOF | oc apply -f -
+cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: "autoscaling.k8s.io/v1"
 kind: VerticalPodAutoscaler
 metadata:
@@ -87,7 +91,7 @@ spec:
     containerPolicies:
       - containerName: '*'
         minAllowed:
-          cpu: 100m
+          cpu: 200m
           memory: 50Mi
         maxAllowed:
           cpu: 2
