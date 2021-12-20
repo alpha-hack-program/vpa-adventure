@@ -1,19 +1,19 @@
 0. Create a project without LimitRange
 
 ```
-oc new-project test-vpa-2
+oc new-project test-vpa
 ```
 
 1. Delete any preexistent LimitRange.
 
 ```
-oc -n test-vpa-2 delete limitrange --all
+oc -n test-vpa delete limitrange --all
 ```
 
 2. Deploy Hamster application:
 
 ```
-cat << EOF 
+cat <<EOF | oc apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +22,7 @@ spec:
   selector:
     matchLabels:
       app: hamster
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:
@@ -42,18 +42,33 @@ spec:
           args:
             - "-c"
             - "while true; do timeout 0.25s yes >/dev/null; sleep 0.25s; done"
-EOF | oc apply -f -
+EOF
 ```
 
 3. Check that the request and limits generated in Pod
 
 ```
 oc get pod -l app=hamster -o yaml | grep limit -A2
+        limits:
+          cpu: 200m
+          memory: 75Mi
+--
+        limits:
+          cpu: 200m
+          memory: 75Mi
+```
+
+```
+oc get pod -l app=hamster -o yaml | grep requests -A2
+        requests:
+          cpu: 100m
+          memory: 50Mi
 ```
 
 4. Apply the VPA 
 
 ```
+cat <<EOF | oc apply -f -
 apiVersion: "autoscaling.k8s.io/v1"
 kind: VerticalPodAutoscaler
 metadata:
@@ -78,6 +93,7 @@ spec:
           cpu: 2
           memory: 2048Mi
         controlledResources: ["cpu", "memory"]
+EOF
 ```
 
 NOTE: we're setting the maxAllowed higher than the potential LimitRange, to see that the LimitRange max will cap/override the expected result.
