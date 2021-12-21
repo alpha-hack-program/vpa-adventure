@@ -58,7 +58,7 @@ kubectl -n openshift-vertical-pod-autoscaler patch VerticalPodAutoscalerControll
 3. Extract the machineset for scale the worker nodes to 1:
 
 ```bash
-MACHINESET=$(oc get machineset -n openshift-machine-api --no-headers=true | awk '{ print $1 }')
+MACHINESET=$(oc get machineset -n openshift-machine-api --no-headers=true | awk '{ print $1 }' | head -n1)
 
 echo $MACHINESET
 ocp-8vr6j-worker-0
@@ -82,7 +82,7 @@ ocp-8vr6j-worker-0-vs4xr   Ready    worker   5m56s   v1.22.0-rc.0+a44d0f0
 * Extract the name of the worker that it's on the cluster:
 
 ```bash
-WORKER1=$(oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker= --no-headers=true | awk '{ print $1 }')
+WORKER1=$(oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker= --no-headers=true | awk '{ print $1 }' | head -n1)
 ```
 
 * Extract the [Node Allocatable](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable) information:
@@ -381,9 +381,68 @@ I1221 21:49:24.798992       1 klogx.go:86] Pod openshift-monitoring/thanos-queri
 I1221 21:49:24.798996       1 klogx.go:86] Pod test-vpa-uc4-14103/stress-55fcc998cd-zhr4s is unschedulable
 ```
 
+10. In AWS we have a MachineSetAutoscaler and a ClusterAutoscaler:
 
+```bash
+I1221 22:15:55.055691       1 klogx.go:86] Pod openshift-monitoring/thanos-querier-5ccdb96dfc-qvpfc is unschedulable
+I1221 22:15:55.055697       1 klogx.go:86] Pod openshift-image-registry/image-registry-d7f8f889d-ljftf is unschedulable
+I1221 22:15:55.055702       1 klogx.go:86] Pod test-vpa-uc4-27100/stress-7cb7f9755c-2nth8 is unschedulable
+I1221 22:15:55.856583       1 scale_up.go:468] Best option to resize: MachineSet/openshift-machine-api/cluster-246f9-hjqvp-worker-eu-west-1a
+I1221 22:15:55.856629       1 scale_up.go:472] Estimated 1 nodes needed in MachineSet/openshift-machine-api/cluster-246f9-hjqvp-worker-eu-west-1a
+I1221 22:15:56.121014       1 scale_up.go:586] Final scale-up plan: [{MachineSet/openshift-machine-api/cluster-246f9-hjqvp-worker-eu-west-1a 1->2 (max: 3)}]
+I1221 22:15:56.121059       1 scale_up.go:675] Scale-up: setting group MachineSet/openshift-machine-api/cluster-246f9-hjqvp-worker-eu-west-1a size to 2
+```
 
+11. The pending pod triggers the cluster autoscaling though the machineset:
 
+```bash
+oc get machines -A
 
+NAMESPACE               NAME                                          PHASE         TYPE          REGION      ZONE         AGE
+openshift-machine-api   cluster-246f9-hjqvp-master-0                  Running       m5a.2xlarge   eu-west-1   eu-west-1a   9h
+openshift-machine-api   cluster-246f9-hjqvp-master-1                  Running       m5a.2xlarge   eu-west-1   eu-west-1b   9h
+openshift-machine-api   cluster-246f9-hjqvp-master-2                  Running       m5a.2xlarge   eu-west-1   eu-west-1c   9h
+openshift-machine-api   cluster-246f9-hjqvp-worker-eu-west-1a-kwpf6   Running       m5a.4xlarge   eu-west-1   eu-west-1a   9h
+openshift-machine-api   cluster-246f9-hjqvp-worker-eu-west-1a-v99dw   Provisioned   m5a.4xlarge   eu-west-1   eu-west-1a   2m44s
+```
 
+12. New node is autoscaled and provisioned with the machineset to allocate the existing pods with the VPA recommendations:
 
+```bash
+oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker=
+NAME                                         STATUS   ROLES    AGE   VERSION
+ip-10-0-129-130.eu-west-1.compute.internal   Ready    worker   9h    v1.22.0-rc.0+894a78b
+ip-10-0-146-118.eu-west-1.compute.internal   Ready    worker   31s   v1.22.0-rc.0+894a78b
+```
+
+13. Now both replicas of the scaled deployment of our stress app are up && running:
+
+```bash
+oc get pod
+NAME                      READY   STATUS    RESTARTS   AGE
+stress-7cb7f9755c-2nth8   1/1     Running   0          7m59s
+stress-7cb7f9755c-9fcx6   1/1     Running   0          8m55s
+```
+
+14. The pods have the recommendations defined by the VPA based in the metrics collected:
+
+```
+oc get pod -l app=stress -n $PROJECT -o yaml | grep vpa
+      vpaObservedContainers: stress
+      vpaUpdates: 'Pod resources updated by stress-vpa: container 0: cpu request,
+    namespace: test-vpa-uc4-27100
+      vpaObservedContainers: stress
+      vpaUpdates: 'Pod resources updated by stress-vpa: container 0: cpu request,
+    namespace: test-vpa-uc4-27100
+```
+
+```bash
+oc get pod -l app=stress -n $PROJECT -o yaml | grep requests -A2
+        requests:
+          cpu: 200m
+          memory: "54086194129"
+--
+        requests:
+          cpu: 200m
+          memory: "54086194129"
+```
