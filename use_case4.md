@@ -10,7 +10,26 @@ PROJECT=test-vpa-uc4-$RANDOM
 oc new-project $PROJECT
 ```
 
-2. Modify the minReplicas to 1 in the VerticalPodAutoscalerController:
+2. Deploy the Operator of Vertical Pod Autoscaler in the cluster:
+
+```bash
+cat <<EOF | oc -n $PROJECT apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/vertical-pod-autoscaler.openshift-vertical-pod-autoscaler: ''
+  name: vertical-pod-autoscaler
+  namespace: openshift-vertical-pod-autoscaler
+spec:
+  channel: '4.8'
+  installPlanApproval: Automatic
+  name: vertical-pod-autoscaler
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+```
+
+3. Modify the minReplicas to 1 in the VerticalPodAutoscalerController:
 
 By default, workload objects must specify a minimum of two replicas in order for the VPA to automatically delete and update their pods.
 
@@ -102,6 +121,14 @@ oc patch -n openshift-ingress-operator ingresscontroller/default --patch '{"spec
 ingresscontroller.operator.openshift.io/default patched
 ```
 
+* Check that the pod of OpenShift ingress have only one replica:
+
+```bash
+oc get pod -n openshift-ingress
+NAME                              READY   STATUS    RESTARTS   AGE
+router-default-785c88c8b4-vb64b   1/1     Running   0          4h23m
+```
+
 5. Delete any preexistent LimitRange:
 
 ```bash
@@ -190,8 +217,6 @@ spec:
         controlledResources: ["cpu", "memory"]
 EOF
 ```
-
-NOTE: We need to be aware that the VPA will block the resources not only for memory, also for the CPU, causing the Pending state when applies the Auto Recommendation.
 
 8. After a couple of minutes, check the VPA to see the Memory and CPU suggested:
 
@@ -297,12 +322,11 @@ oc get pod -l app=stress -n $PROJECT -o yaml | grep vpa
 * [Docs Cluster Autoscaling](https://docs.openshift.com/container-platform/4.9/machine_management/applying-autoscaling.html#cluster-autoscaler-cr_applying-autoscaling)
 
 ```sh
+cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: autoscaling.openshift.io/v1
 kind: ClusterAutoscaler
 metadata:
   name: default
-  resourceVersion: '23534024'
-  uid: 79a19789-e689-4c40-8a14-1218a3337ead
 spec:
   podPriorityThreshold: -10
   resourceLimits:
@@ -319,6 +343,7 @@ spec:
     delayAfterFailure: 30s
     enabled: true
     unneededTime: 5m
+EOF
 ```
 
 ```sh
