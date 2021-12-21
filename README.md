@@ -1,6 +1,6 @@
 # Vertical Pod Autoscaler Adventure
 
-Vertical Pod Autoscaler (VPA) frees the users from necessity of setting up-to-date resource limits and requests for the containers in their pods. 
+Vertical Pod Autoscaler (VPA) frees the users from necessity of setting up-to-date resource limits and requests for the containers in their pods.
 
 When configured, it will set the requests automatically based on usage and thus allow proper scheduling onto nodes so that appropriate resource amount is available for each pod. It will also maintain ratios between limits and requests that were specified in initial containers configuration.
 
@@ -14,24 +14,27 @@ The VPA automatically computes historic and current CPU and memory usage for the
 
 For developers, you can use the VPA to help ensure your pods stay up during periods of high demand by scheduling pods onto nodes that have appropriate resources for each pod.
 
-Administrators can use the VPA to better utilize cluster resources, such as preventing pods from reserving more CPU resources than needed. 
+Administrators can use the VPA to better utilize cluster resources, such as preventing pods from reserving more CPU resources than needed.
 
 The VPA monitors the resources that workloads are actually using and adjusts the resource requirements so capacity is available to other workloads. The VPA also maintains the ratios between limits and requests that are specified in initial container configuration.
 
 ## Use Cases
 
-* **Use Case 1** - Generate VPA in the Upstream Example (https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/examples/hamster.yaml)
+* **[Use Case 1](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case1.md)** - Use Case 1 - Autoscaling and Applying requests and limits automatically
 
-* **Use Case 2** - Generate VPA with our own application (java?)
+* **[Use Case 2](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case2.md)** - Automatically adjust requests / limits when Apps are OOMKilled
 
-* **Use Case 3** - Integrate Alarms when you do a recommendation - AlertManager? Prometheus?  
-VPA Update Off - https://docs.openshift.com/container-platform/4.9/nodes/pods/nodes-pods-vertical-autoscaler.html
+* **Use Case 3** - Generate VPA with our own application (java?)
 
 * **Use Case 4** - VPA + Cluster Autoscaler - Black Friday Crisis
 VPA recommendation might exceed available resources (e.g. Node size, available size, available quota) and cause pods to go pending. This can be partly addressed by using VPA together with Cluster Autoscaler.
 
-* **Use Case x** - autoscale down the limits pod - VPA 
-Use Case 4 but in reverse, autoscale down all 
+* **Use Case x** - autoscale down the limits pod - VPA
+Use Case 4 but in reverse, autoscale down all
+
+* **Use Case x** - Integrate Alarms when you do a recommendation - AlertManager? Prometheus?
+VPA Update Off - https://docs.openshift.com/container-platform/4.9/nodes/pods/nodes-pods-vertical-autoscaler.html
+
 
 ## VPA Recommendation Parameters
 
