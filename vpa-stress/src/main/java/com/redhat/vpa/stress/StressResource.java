@@ -18,7 +18,6 @@ public class StressResource {
 
     @Inject
     Work work;
-
     
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -29,6 +28,17 @@ public class StressResource {
     @GET
     @Path("memory")
     public String memory(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("period") Integer period) {
+
+        for(int i = 0; i < 10; i++) {
+            work.doWork();
+        }
+
+        return "Hello RESTEasy";
+    }
+
+    @GET
+    @Path("cpu")
+    public String cpu(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("period") Integer period) {
 
         for(int i = 0; i < 10; i++) {
             work.doWork();
