@@ -10,11 +10,14 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.logging.Logger;
+
 
 @Path("/stress")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class StressResource {
+    Logger logger = Logger.getLogger(StressResource.class);
 
     @Inject
     MemoryConsumer memoryConsumer;
@@ -39,9 +42,9 @@ public class StressResource {
 
     @GET
     @Path("cpu")
-    public String cpu(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("duration") Integer duration, @QueryParam("steps") Integer steps) {
-
-        cpuConsumer.doWork(start, end, duration, steps);
+    public String cpu(@QueryParam("start") Integer startLoad, @QueryParam("end") Integer endLoad, @QueryParam("duration") Integer durationInSeconds, @QueryParam("steps") Integer steps) {
+        logger.info(String.format("Do work with %d %d %d %d", startLoad, endLoad, durationInSeconds, steps));
+        cpuConsumer.doWork(startLoad, endLoad, durationInSeconds, steps);
 
         return "Hello RESTEasy";
     }
