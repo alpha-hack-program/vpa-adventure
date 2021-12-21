@@ -13,6 +13,10 @@ oc new-project $PROJECT
 2. Modify the minReplicas to 1 in the VerticalPodAutoscalerController:
 
 ```sh
+kubectl -n openshift-vertical-pod-autoscaler patch VerticalPodAutoscalerController default --type='json' -p='[{"op": "replace", "path": "/spec/minReplicas", "value":1}]'
+```
+
+```sh
  oc get VerticalPodAutoscalerControllers default -n openshift-vertical-pod-autoscaler -o jsonpath='{.spec}' | jq -r .
 {
   "minReplicas": 1,
@@ -33,7 +37,7 @@ ocp-8vr6j-worker-0
 ```
 
 ```bash
-oc scale machineset --replicas 1 -n openshift-machine-api ocp-8vr6j-worker-0
+oc scale machineset --replicas 1 -n openshift-machine-api $MACHINESET
 machineset.machine.openshift.io/ocp-8vr6j-worker-0 scaled
 ```
 
@@ -41,6 +45,10 @@ machineset.machine.openshift.io/ocp-8vr6j-worker-0 scaled
 oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker=
 NAME                       STATUS   ROLES    AGE     VERSION
 ocp-8vr6j-worker-0-vs4xr   Ready    worker   5m56s   v1.22.0-rc.0+a44d0f0
+```
+
+```bash
+WORKER1=$(oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker= --no-headers=true | awk '{ print $1 }')
 ```
 
 * [Node Allocatable](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable)
