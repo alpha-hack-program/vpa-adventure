@@ -26,7 +26,7 @@ The VPA monitors the resources that workloads are actually using and adjusts the
 
 * **Use Case 3** - Generate VPA with our own application (java?)
 
-* **Use Case 4** - VPA + Cluster Autoscaler - Black Friday Crisis
+* **[Use Case 4](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case4.md)** - VPA + Cluster Autoscaler - Black Friday Crisis
 VPA recommendation might exceed available resources (e.g. Node size, available size, available quota) and cause pods to go pending. This can be partly addressed by using VPA together with Cluster Autoscaler.
 
 * **Use Case x** - autoscale down the limits pod - VPA
