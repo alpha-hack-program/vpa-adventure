@@ -12,9 +12,17 @@ oc new-project $PROJECT
 
 2. Modify the minReplicas to 1 in the VerticalPodAutoscalerController:
 
+By default, workload objects must specify a minimum of two replicas in order for the VPA to automatically delete and update their pods.
+
+As a result, workload objects that specify fewer than two replicas are not automatically acted upon by the VPA. The VPA does update new pods from these workload objects if the pods are restarted by some process external to the VPA.
+
+We can change this cluster-wide minimum value by modifying the minReplicas parameter in the VerticalPodAutoscalerController custom resource (CR).
+
 ```sh
 kubectl -n openshift-vertical-pod-autoscaler patch VerticalPodAutoscalerController default --type='json' -p='[{"op": "replace", "path": "/spec/minReplicas", "value":1}]'
 ```
+
+* Check the VPA Controller parameters to check the minReplicas:
 
 ```sh
  oc get VerticalPodAutoscalerControllers default -n openshift-vertical-pod-autoscaler -o jsonpath='{.spec}' | jq -r .
@@ -27,7 +35,7 @@ kubectl -n openshift-vertical-pod-autoscaler patch VerticalPodAutoscalerControll
 }
 ```
 
-2. Scale down to 1 replica the worker nodes available:
+3. Extract the machineset for scale the worker nodes to 1:
 
 ```bash
 MACHINESET=$(oc get machineset -n openshift-machine-api --no-headers=true | awk '{ print $1 }')
@@ -36,10 +44,14 @@ echo $MACHINESET
 ocp-8vr6j-worker-0
 ```
 
+* Scale down to 1 replica the worker nodes available, to stress easily our cluster:
+
 ```bash
 oc scale machineset --replicas 1 -n openshift-machine-api $MACHINESET
 machineset.machine.openshift.io/ocp-8vr6j-worker-0 scaled
 ```
+
+* After couple of minutes, check the workers nodes that are present in the cluster:
 
 ```bash
 oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker=
@@ -47,15 +59,15 @@ NAME                       STATUS   ROLES    AGE     VERSION
 ocp-8vr6j-worker-0-vs4xr   Ready    worker   5m56s   v1.22.0-rc.0+a44d0f0
 ```
 
+* Extract the name of the worker that it's on the cluster:
+
 ```bash
 WORKER1=$(oc get nodes -l kubernetes.io/os=linux,node-role.kubernetes.io/worker= --no-headers=true | awk '{ print $1 }')
 ```
 
-* [Node Allocatable](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable)
+* Extract the [Node Allocatable](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable) information:
 
-Describes the resources available on the node: CPU, memory, and the maximum number of pods that can be scheduled onto the node.
-
-The fields in the capacity block indicate the total amount of resources that a Node has. The allocatable block indicates the amount of resources on a Node that is available to be consumed by normal Pods.
+Node Allocatable: Describes the resources available on the node: CPU, memory, and the maximum number of pods that can be scheduled onto the node.
 
 ```bash
 oc get nodes $WORKER1 -o jsonpath='{.status.allocatable}' | jq -r .
@@ -69,6 +81,8 @@ oc get nodes $WORKER1 -o jsonpath='{.status.allocatable}' | jq -r .
 }
 ```
 
+The fields in the capacity block indicate the total amount of resources that a Node has. The allocatable block indicates the amount of resources on a Node that is available to be consumed by normal Pods.
+
 ```bash
 oc get nodes $WORKER1 -o jsonpath='{.status.capacity}' | jq -r .
 {
@@ -81,18 +95,20 @@ oc get nodes $WORKER1 -o jsonpath='{.status.capacity}' | jq -r .
 }
 ```
 
+4. Patch the ingress controller operator to have one replica only of the openshift ingress deployed in the worker node:
+
 ```bash
 oc patch -n openshift-ingress-operator ingresscontroller/default --patch '{"spec":{"replicas": 1}}' --type=merge
 ingresscontroller.operator.openshift.io/default patched
 ```
 
-3. Delete any preexistent LimitRange:
+5. Delete any preexistent LimitRange:
 
 ```bash
 oc -n $PROJECT delete limitrange --all
 ```
 
-3. Deploy stress application into the ns:
+6. Deploy stress application into the ns:
 
 ```bash
 cat <<EOF | oc -n $PROJECT apply -f -
@@ -115,6 +131,9 @@ spec:
         image: polinux/stress
         command: ["stress"]
         args: ["--vm", "1", "--vm-bytes", "8000M"]
+        resources:
+          requests:
+            memory: 4000Mi
 EOF
 ```
 
@@ -125,9 +144,9 @@ On the other hand, we used the stress image, and as in the [Image Stress Documen
 - --vm-bytes B: malloc B bytes per vm worker (default is 256MB)
 ```
 
-So we defined 8G of memory allocation by the stress process.
+So we defined 50G of memory allocation by the stress process.
 
-4. Check that the pod is up && running:
+7. Check that the pod is up && running:
 
 ```sh
 oc get pod
@@ -167,7 +186,7 @@ spec:
           memory: 50Mi
         maxAllowed:
           cpu: 200m
-          memory: 24Gi
+          memory: 60Gi
         controlledResources: ["cpu", "memory"]
 EOF
 ```
@@ -287,7 +306,13 @@ metadata:
 spec:
   podPriorityThreshold: -10
   resourceLimits:
-    maxNodesTotal: 6
+    cores:
+      max: 256
+      min: 2
+    maxNodesTotal: 8
+    memory:
+      max: 512
+      min: 4
   scaleDown:
     delayAfterAdd: 10m
     delayAfterDelete: 5m
