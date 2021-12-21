@@ -13,7 +13,7 @@ oc new-project $PROJECT
 2. Deploy the Operator of Vertical Pod Autoscaler in the cluster:
 
 ```bash
-cat <<EOF | oc -n $PROJECT apply -f -
+cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
