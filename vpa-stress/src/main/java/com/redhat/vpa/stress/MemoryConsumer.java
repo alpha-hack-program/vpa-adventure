@@ -4,6 +4,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import java.util.UUID;
 
 
@@ -12,6 +14,8 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class MemoryConsumer implements Work {
     Logger logger = Logger.getLogger(MemoryConsumer.class);
+
+    private boolean memoryFailed = false;
 
     private int start;
     private int end;
@@ -34,6 +38,14 @@ public class MemoryConsumer implements Work {
                 this::worker, Throwable::printStackTrace
         );
 
+    }
+
+    public boolean isMemoryFailed() {
+        return memoryFailed;
+    }
+
+    public void setMemoryFailed(boolean memoryFailed) {
+        this.memoryFailed = memoryFailed;
     }
 
     private Uni<Void> worker(UUID uuid) {
@@ -62,11 +74,28 @@ public class MemoryConsumer implements Work {
                 }
                 logger.info("Working: " + uuid + " Added " + chunks + " Mb of memory");
 
-            } catch (InterruptedException ex) {
+            } catch (InterruptedException e) {
                 logger.info("Could not finish work: " + uuid);
-                throw new RuntimeException(ex);
+                throw new RuntimeException(e);
+            } catch (OutOfMemoryError e) {
+                logger.info("Could not finish work: " + uuid);
+                this.setMemoryFailed(true);
+                throw new RuntimeException(e);
+            } catch (Throwable e) {
+                logger.info("Could not finish work: " + uuid);
+                this.setMemoryFailed(true);
+                throw new RuntimeException(e);
             }
         }
+
+        // Delete memory...
+        for (Object chunk : bytes) {
+            chunk = null;
+        }
+        bytes = null;
+
+        System.gc();
+
         logger.info("Finish work: " + uuid);
         return Uni.createFrom().voidItem();
     }
