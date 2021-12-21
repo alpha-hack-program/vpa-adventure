@@ -347,30 +347,21 @@ EOF
 ```
 
 ```sh
-oc get machineautoscaler -n openshift-machine-api ocp-8vr6j-worker-0 -o yaml
+cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: autoscaling.openshift.io/v1beta1
 kind: MachineAutoscaler
 metadata:
-  creationTimestamp: "2021-12-21T11:12:04Z"
-  finalizers:
   - machinetarget.autoscaling.openshift.io
-  generation: 1
-  name: ocp-8vr6j-worker-0
+  name: machineset-autoscaler-vpa
   namespace: openshift-machine-api
-  resourceVersion: "23531668"
-  uid: 0e1fe7e2-c7f5-4bdc-8a5f-9824b1b1e8c6
 spec:
   maxReplicas: 3
   minReplicas: 1
   scaleTargetRef:
     apiVersion: machine.openshift.io/v1beta1
     kind: MachineSet
-    name: ocp-8vr6j-worker-0
-status:
-  lastTargetRef:
-    apiVersion: machine.openshift.io/v1beta1
-    kind: MachineSet
-    name: ocp-8vr6j-worker-0
+    name: $MACHINESET
+EOF
 ```
 
 
