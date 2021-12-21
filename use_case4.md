@@ -27,6 +27,7 @@ spec:
   name: vertical-pod-autoscaler
   source: redhat-operators
   sourceNamespace: openshift-marketplace
+EOF
 ```
 
 3. Modify the minReplicas to 1 in the VerticalPodAutoscalerController:
@@ -347,11 +348,10 @@ EOF
 ```
 
 ```sh
-cat <<EOF | oc -n $PROJECT apply -f -
+cat <<EOF | oc apply -f -
 apiVersion: autoscaling.openshift.io/v1beta1
 kind: MachineAutoscaler
 metadata:
-  - machinetarget.autoscaling.openshift.io
   name: machineset-autoscaler-vpa
   namespace: openshift-machine-api
 spec:
@@ -364,70 +364,26 @@ spec:
 EOF
 ```
 
+NOTE: Seems that the clusterautoscaler it's not working properly with the OCP4 IPI Libvirt due to [this Bug](https://bugzilla.redhat.com/show_bug.cgi?id=1822118) and [this issue](https://issues.redhat.com/browse/OCPRHV-22):
 
-
-
-
-
-
-
-
-
-
-
-
-
-10. Check the pods to see if the OOMKilled or Crashloopbackoff state it's in our stress pod:
-
-```sh
-oc get pod -w
-NAME                      READY   STATUS        RESTARTS   AGE
-stress-7b9459559c-ntnrv   1/1     Running       0          5s
-stress-7d48fdb6fb-j46b8   1/1     Terminating   0          22m
+```bash
+1 klogx.go:86] Pod openshift-monitoring/prometheus-adapter-77586c4b89-9hmgk is unschedulable
+I1221 21:49:13.575822       1 klogx.go:86] Pod openshift-monitoring/thanos-querier-676b56475b-7ghnv is unschedulable
+I1221 21:49:13.575827       1 klogx.go:86] Pod test-vpa-uc4-14103/stress-55fcc998cd-zhr4s is unschedulable
+E1221 21:49:13.975682       1 static_autoscaler.go:427] Failed to scale up: Could not compute total resources: No node info for: MachineSet/openshift-machine-api/ocp-65n9f-worker-0
+W1221 21:49:14.175622       1 clusterstate.go:385] Failed to find readiness information for MachineSet/openshift-machine-api/ocp-65n9f-worker-0
+W1221 21:49:14.175651       1 clusterstate.go:385] Failed to find readiness information for MachineSet/openshift-machine-api/ocp-65n9f-worker-0
+W1221 21:49:24.224542       1 clusterstate.go:447] Failed to find readiness information for MachineSet/openshift-machine-api/ocp-65n9f-worker-0
+W1221 21:49:24.251950       1 clusterstate.go:621] Readiness for node group MachineSet/openshift-machine-api/ocp-65n9f-worker-0 not found
+W1221 21:49:24.798656       1 static_autoscaler.go:784] Couldn't find template for node group MachineSet/openshift-machine-api/ocp-65n9f-worker-0
+I1221 21:49:24.798983       1 klogx.go:86] Pod openshift-monitoring/prometheus-adapter-77586c4b89-9hmgk is unschedulable
+I1221 21:49:24.798992       1 klogx.go:86] Pod openshift-monitoring/thanos-querier-676b56475b-7ghnv is unschedulable
+I1221 21:49:24.798996       1 klogx.go:86] Pod test-vpa-uc4-14103/stress-55fcc998cd-zhr4s is unschedulable
 ```
 
-11. Check the VPA resources and :
 
-```sh
- oc get pod -l app=stress -o yaml | grep vpa
-      vpaObservedContainers: stress
-      vpaUpdates: 'Pod resources updated by stress-vpa: container 0: cpu request,
-```
 
-8. Check that the VPA changed automatically the requests and limits in the POD, but NOT in the deployment or replicaset:
 
-```sh
-oc get pod -l app=stress -o yaml | grep requests -A2
-        requests:
-          cpu: "1"
-          memory: 262144k
-```
 
-```sh
-oc get pod -l app=stress -o yaml | grep limits -A1
-        limits:
-          memory: 500Mi
-```
 
-So what happens to the limits parameter of your pod? Of course they will be also adapted, when you touch the requests line. The VPA will proportionally scale limits.
 
-As mentioned above, this is proportional scaling: in our default stress deployment manifest, we have the following requests to limits ratio:
-
-* CPU: 100m -> 200m: 1:4 ratio
-* memory: 100Mi -> 250Mi: 1:2.5 ratio
-
-So when you get a scaling recommendation, it will respect and keep the same ratio you originally configured, and proportionally set the new values based on your original ratio.
-
-8. The deployment of stress app is not changed at all, the VPA just is changing the Pod spec definition:
-
-```
-oc get deployment stress -o yaml | egrep -i 'limits|request' -A1
-         requests:
-            memory: "100Mi"
-          limits:
-            memory: "200Mi"
-```
-
-But don’t forget, your limits are almost irrelevant, as the scheduling decision (and therefore, resource contention) will be always done based on the requests.
-
-Limits are only useful when there's resource contention or when you want to avoid uncontrollable memory leaks.
