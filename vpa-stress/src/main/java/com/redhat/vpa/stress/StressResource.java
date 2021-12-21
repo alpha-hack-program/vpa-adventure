@@ -17,7 +17,10 @@ import javax.ws.rs.core.MediaType;
 public class StressResource {
 
     @Inject
-    Work work;
+    MemoryConsumer memoryConsumer;
+
+    @Inject
+    CPUConsumer cpuConsumer;
     
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -27,22 +30,18 @@ public class StressResource {
 
     @GET
     @Path("memory")
-    public String memory(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("period") Integer period) {
+    public String memory(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("duration") Integer duration, @QueryParam("steps") Integer steps) {
 
-        for(int i = 0; i < 10; i++) {
-            work.doWork();
-        }
-
+        memoryConsumer.doWork(start, end, duration, steps);
+        
         return "Hello RESTEasy";
     }
 
     @GET
     @Path("cpu")
-    public String cpu(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("period") Integer period) {
+    public String cpu(@QueryParam("start") Integer start, @QueryParam("end") Integer end, @QueryParam("duration") Integer duration, @QueryParam("steps") Integer steps) {
 
-        for(int i = 0; i < 10; i++) {
-            work.doWork();
-        }
+        cpuConsumer.doWork(start, end, duration, steps);
 
         return "Hello RESTEasy";
     }

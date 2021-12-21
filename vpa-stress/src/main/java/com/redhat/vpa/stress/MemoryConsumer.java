@@ -13,7 +13,7 @@ public class MemoryConsumer implements Work {
     Logger logger = Logger.getLogger(MemoryConsumer.class);
 
     @Override
-    public void doWork() {
+    public void doWork(Integer start, Integer end, Integer duration, Integer steps) {
         logger.info("Do work");
 
         Uni.createFrom().item(UUID::randomUUID).emitOn(Infrastructure.getDefaultWorkerPool()).subscribe().with(
