@@ -81,10 +81,12 @@ public class MemoryConsumer implements Work {
                 logger.info("Could not finish work: " + uuid);
                 this.setMemoryFailed(true);
                 throw new RuntimeException(e);
+                // System.exit(1);
             } catch (Throwable e) {
                 logger.info("Could not finish work: " + uuid);
                 this.setMemoryFailed(true);
                 throw new RuntimeException(e);
+                // System.exit(1);
             }
         }
 
