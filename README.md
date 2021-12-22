@@ -20,11 +20,11 @@ The VPA monitors the resources that workloads are actually using and adjusts the
 
 ## Use Cases
 
-* **[Use Case 1](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case1.md)** - Use Case 1 - Autoscaling and Applying requests and limits automatically
+* **[Use Case 1](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case1.md)** - Autoscaling and Applying requests and limits automatically
 
 * **[Use Case 2](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case2.md)** - Automatically adjust requests / limits when Apps are OOMKilled
 
-* **Use Case 3** - Generate VPA with our own application (java?)
+* **[Use Case 3](https://github.com/alpha-hack-program/vpa-adventure/tree/main/vpa-stress)** - Generate VPA with our own Quarkus application that will allocate and grow in memory and CPU on demand
 
 * **[Use Case 4](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case4.md)** - VPA + Cluster Autoscaler - Black Friday Crisis
 VPA recommendation might exceed available resources (e.g. Node size, available size, available quota) and cause pods to go pending. This can be partly addressed by using VPA together with Cluster Autoscaler.
