@@ -29,11 +29,9 @@ The VPA monitors the resources that workloads are actually using and adjusts the
 * **[Use Case 4](https://github.com/alpha-hack-program/vpa-adventure/blob/main/use_case4.md)** - VPA + Cluster Autoscaler - Black Friday Crisis
 VPA recommendation might exceed available resources (e.g. Node size, available size, available quota) and cause pods to go pending. This can be partly addressed by using VPA together with Cluster Autoscaler.
 
-* **Use Case x** - autoscale down the limits pod - VPA
-Use Case 4 but in reverse, autoscale down all
+* **Use Case x - Optional** - autoscale down the limits pod - VPA
 
-* **Use Case x** - Integrate Alarms when you do a recommendation - AlertManager? Prometheus?
-VPA Update Off - https://docs.openshift.com/container-platform/4.9/nodes/pods/nodes-pods-vertical-autoscaler.html
+* **Use Case x - Optional** - Integrate Alarms when you do a recommendation - AlertManager? Prometheus?
 
 
 ## VPA Recommendation Parameters
