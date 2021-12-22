@@ -42,9 +42,11 @@ public class StressResource {
 
     @GET
     @Path("cpu")
-    public String cpu(@QueryParam("start") Integer startLoad, @QueryParam("end") Integer endLoad, @QueryParam("duration") Integer durationInSeconds, @QueryParam("steps") Integer steps) {
-        logger.info(String.format("Do work with %d %d %d %d", startLoad, endLoad, durationInSeconds, steps));
-        cpuConsumer.doWork(startLoad, endLoad, durationInSeconds, steps);
+    public String cpu(@QueryParam("start") Integer startLoad, @QueryParam("end") Integer endLoad, @QueryParam("duration") Integer durationInSeconds, 
+            @QueryParam("steps") Integer steps, @QueryParam("threads") Integer threads) 
+    {
+        logger.info(String.format("Do work with %d %d %d %d %d", startLoad, endLoad, durationInSeconds, steps, threads));
+        cpuConsumer.doWork(startLoad, endLoad, durationInSeconds, steps, threads);
 
         return "Hello RESTEasy";
     }
