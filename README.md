@@ -33,6 +33,7 @@ VPA recommendation might exceed available resources (e.g. Node size, available s
 
 * **Use Case x - Optional** - Integrate Alarms when you do a recommendation - AlertManager? Prometheus?
 
+* **Use Case x - Optional** - Test Multitenancy of the VPA Operator (more than one VPA in the same OCP/K8s cluster)
 
 ## VPA Recommendation Parameters
 
